@@ -26,12 +26,65 @@ def fit_exp_linear(t, y, C=0):
     A = np.exp(A_log)
     return A, K
 
+def exp_fit_signal(data, signal, tspan, color=None):
+        """
+        Function to do an exponential fit on selection of data
+        Parameters
+        ----------
+        data : ECMSMeasurement object (probably ECMeasurement or MSMeasurement 
+                                       will also work)
+        signal : which part of the ECMSMeasurement object to fit, i.e. column 
+        that will then be selected using ECMSMeasurement.grab(signal)
+        tspan : ixdat syntax for providing a time span [tstart,tend], time span
+        over which the fit will be done
+        color : color to use for plotting "signal", for MS signals, standard 
+        is selected automatically
+        
+        Returns
+        -------
+        t_half, (fig, ax1)
+        """
+        
+        if color is None:
+            if "M" in signal:
+                color = ixdat.plotters.ms_plotter.STANDARD_COLORS[signal]
+            else: 
+                color = "k"
+        if "M" in signal:
+            ylabel = "MS signal / A"
+        else:
+            ylabel = "signal"
+                
+        t, sig = data.grab(signal)
+        data_to_fit = data.cut(tspan=tspan)
+        t_to_fit, sig_to_fit = data_to_fit.grab(signal)
+        
+        # by plotting, check that everything makes sense
+        fig, ax1 = plt.subplots()
+        ax1.plot(t, sig, linestyle="", marker="o", markersize="3", markerfacecolor="w", markeredgecolor=color ,label=signal+ " signal")
+        ax1.plot(t_to_fit, sig_to_fit, label="selected")
+        ax1.set_xlim(tspan[0]-10,tspan[1]+20)
+        ax1.set_xlabel("time / s")
+        ax1.set_ylabel(ylabel)
+        
+        sig_fit_params = fit_exp_linear(t_to_fit, sig_to_fit, C=0)
+        sig_fit = model_func(t_to_fit, sig_fit_params[0], sig_fit_params[1], C=0)
+        
+        ax1.plot(t_to_fit, sig_fit, ":", label="fit")
+        ax1.legend()
+        
+        t_half_sig = np.log(2)/-sig_fit_params[1]
+        ax1.annotate(f"t_half={t_half_sig:.2f} s", (0.5,0.5), xycoords="subfigure fraction")
+        
+        print(signal + " t_half at " + str(time) + "s = " + str(t_half_sig))
+        
+        return t_half_sig, (fig, ax1)
+
 # define a common file name for all generated data files and plots
 exp_name = "RnD1system_benchmark"
+data_directory = Path.home() / r"C:\Users\AnnaWiniwarter\Dropbox (Spectro Inlets)\Development\Data\New Benchmarking Procedure"
 
-if True: # first time/fresh import from zilien
-    data_directory = Path.home() / r"C:\Users\AnnaWiniwarter\Dropbox (Spectro Inlets)\Development\Data\New Benchmarking Procedure"
-        
+if False: # first time/fresh import from zilien
     full_data = ixdat.Measurement.read(data_directory / "2022-01-31 11_11_16 test benchmarking 3/2022-01-31 11_11_16 test benchmarking 3.tsv", reader="zilien")
     
     axes_a = full_data.plot_measurement(tspan=[0,10000])
@@ -39,8 +92,8 @@ if True: # first time/fresh import from zilien
     full_plot.savefig("./" + exp_name + "full_experiment.png")
     full_data.export("./" + exp_name + ".csv")
 
-if False: # importy from ixdat file
-    full_data = ixdat.Measurement.read("./" + exp_name + "csv", reader="ixdat")
+if True: # importy from ixdat file
+    full_data = ixdat.Measurement.read("./" + exp_name + ".csv", reader="ixdat")
 
 if True: # plot the CV part
     cvs = full_data.cut(tspan=[400,1400])
@@ -49,27 +102,32 @@ if True: # plot the CV part
     axes_b = cvs.plot_measurement()
     cvs_vs_time = axes_b[0].get_figure()
     cvs_vs_time.savefig("./" + exp_name + "CVs_vs_time.png")
-    
-    # plot one of the CVs vs potential. To only plot EC data, import biologic file directly 
-    # TODO: rewrite this to use the EC plotter for zilien data: ixdat.plotters.ECPlotter(measurement=mymeasurement).plot_measurement()
-    cvs_ec_only = ECMeasurement.read(data_directory / "2022-01-31 11_11_16 test benchmarking 3/2022-01-31 11_11_16 test benchmarking 3_01_01_CVA_DUSB0_C01.mpt", reader="biologic")
-    cvs_ec_only = cvs_ec_only.as_cv()
-    axes_c = cvs_ec_only[3].plot_vs_potential()
+    # plot one of the CVs vs potential. 
+    axes_c = ixdat.plotters.ECPlotter(measurement=cvs[3]).plot_vs_potential()
     cvs_ec_vs_pot = axes_c.get_figure()
     cvs_ec_vs_pot.savefig("./" + exp_name + "CV_vs_potential_EC.png")
     
+    if False: # To only plot averaged (less noisy) EC data, import biologic file directly 
+        cvs_ec_only = ECMeasurement.read(data_directory / "2022-01-31 11_11_16 test benchmarking 3/2022-01-31 11_11_16 test benchmarking 3_01_01_CVA_DUSB0_C01.mpt", reader="biologic")
+        cvs_ec_only = cvs_ec_only.as_cv()
+        axes_c = cvs_ec_only[3].plot_vs_potential()
+        cvs_ec_vs_pot = axes_c.get_figure()
+        cvs_ec_vs_pot.savefig("./" + exp_name + "CV_vs_potential_EC_biologic.png")
     
-if False: # plot and fit the HER QC
+    
+    
+    
+if True: # plot and fit the HER QC
     her = full_data.cut(tspan=[1500,4000])
     her.tstamp += 1589
     her.plot_measurement(tspan=[0,3000])
     
     tm2_her, m2_her = her.grab("M2")
-    i_her = her.grab_for_t("I/mA", tm2_her)
+    i_her = her.grab_for_t("raw current / [mA]", tm2_her)
     
     # now select the timespan where we want to fit the decay curve
     # the way below is probably not the smartest or most pythonic way, but hopefully
-    # it will work
+    # it will work for this type of data
     # select the range where the m2 signal is decreasing drastically (number chosen is a bit arbitrary)
     mask1 = np.where(np.gradient(m2_her)<-1E-11)
     # select the range where there is a step in the time because values are removed 
@@ -79,34 +137,35 @@ if False: # plot and fit the HER QC
     t_list = [tm2_her[mask1][0]] + tm2_her[mask1][mask2].tolist()
     t_list_clean = t_list[0::2]    
     t_half_h2_list = []    
+    signal = "M2"
     
-    for time in t_list_clean:    
-        hydrogen=her.cut(tspan=[time, time+5])
-        tm2_dec, m2_dec = hydrogen.grab('M2')
-        
-        # check that everything makes sense
-        fig, ax1 = plt.subplots()
-        ax1.plot(tm2_her, m2_her, linestyle="", marker="o", markersize="3", markerfacecolor="w", markeredgecolor="b",label="H2 signal")
-        ax1.plot(tm2_dec, m2_dec, label="selected")
-        ax1.set_xlim(time-10,time+20)
-        ax1.set_xlabel("time / s")
-        ax1.set_ylabel("MS signal / A")
-        
-        h2_fit_params = fit_exp_linear(tm2_dec, m2_dec, C=0)
-        h2_fit = model_func(tm2_dec, h2_fit_params[0], h2_fit_params[1], C=0)
-        
-        ax1.plot(tm2_dec, h2_fit, ":", label="fit")
-        ax1.legend()
-        
-        t_half_h2 = np.log(2)/-h2_fit_params[1]
+    for time in t_list_clean:
+        t_half_h2, fig = exp_fit_signal(her, signal=signal, tspan=[time, time+5])
+        fig[0].savefig("./" + exp_name + "_" + signal + f"decay_at_{time:.0f}s.png")
         t_half_h2_list.append(t_half_h2)
-        ax1.annotate(f"t_half={t_half_h2:.2f} s", (0.5,0.5), xycoords="subfigure fraction")
         
-        print("Hydrogen T_half at " + str(time) + "s = " + str(t_half_h2))
-    
-    
-if False: # plot and fit the gas exchange QC
+    np.savetxt("./" + exp_name + "_" + signal + "_decay_times.csv", t_half_h2_list,
+           delimiter=", ", fmt='%s')
+
+if True: # plot and fit the gas exchange QC
     first_ms = MSMeasurement.read(data_directory / "2022-01-31 11_11_16 test benchmarking 3/2022-01-31 11_11_16 test benchmarking 3.tsv", reader="zilien")
     gas_exchange = first_ms.cut(tspan=[5250, 6200])
     gas_exchange.tstamp += 5250
     gas_exchange.plot_measurement()
+    
+    times_ar = [[277,282],[597,602]]
+    times_he = [[123,128],[447,452]]
+    t_half_list = []
+    
+    for time in times_ar:
+        t_half_ar, fig = exp_fit_signal(gas_exchange, signal="M40", tspan=[time[0], time[1]])
+        fig[0].savefig("./" + exp_name + f"_M40_decay_at_{time[0]:.0f}s.png")
+        t_half_list.append(("M40", t_half_ar))
+    for time in times_he:
+        t_half_he, fig = exp_fit_signal(gas_exchange, signal="M4", tspan=[time[0], time[1]])
+        fig[0].savefig("./" + exp_name + f"_M4_decay_at_{time[0]:.0f}s.png")
+        t_half_list.append(("M4", t_half_he))
+        
+    np.savetxt("./" + exp_name + "_gas_exchange_decay_times.csv", t_half_list,
+           delimiter =", ", fmt='%s')
+    
