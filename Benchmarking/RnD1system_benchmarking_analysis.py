@@ -79,6 +79,39 @@ def exp_fit_signal(data, signal, tspan, color=None):
         print(signal + " t_half at " + str(time) + "s = " + str(t_half_sig))
         
         return t_half_sig, (fig, ax1)
+    
+def find_decay_edge(data, signal, gradient_cutoff):
+        """
+        Function to find time where a mass signal starts decaying 
+        Parameters
+        ----------
+        data : ECMSMeasurement object (probably ECMeasurement or MSMeasurement 
+                                       will also work)
+        signal : which part of the ECMSMeasurement object to fit, i.e. column 
+        that will then be selected using ECMSMeasurement.grab(signal)
+        
+        gradient_cutoff: defines gradient under which mass signal is "decreasing drastically", 
+        depends on the absolute value of the signal -> needs to be chosen individually (a 
+        good first guess is -1*((order of magnitude of signal)-1))
+        
+        Returns
+        -------
+        t_list: list of times where decay starts
+        """
+        t, m = data.grab(signal)
+        
+        # now select the timespan where we want to fit the decay curve
+        # the way below is probably not the smartest or most pythonic way, but
+        # it seems to work for this type of data
+        # select the range where the mass signal is decreasing drastically (number chosen is a bit arbitraryly)
+        mask1 = np.where(np.gradient(m)<gradient_cutoff)
+        # select the range where there is a step in the time because values are removed 
+        # by the previous mask
+        mask2 = np.where(np.gradient(mask1[0])>1)
+        t_list = [t[mask1][0]] + t[mask1][mask2].tolist()
+        t_list_clean = t_list[0::2] # necessary because the second mask find 2 times for each step
+        
+        return t_list_clean
 
 # define a common file name for all generated data files and plots
 exp_name = "RnD1system_benchmark"
@@ -114,36 +147,17 @@ if True: # plot the CV part
         cvs_ec_vs_pot = axes_c.get_figure()
         cvs_ec_vs_pot.savefig("./" + exp_name + "CV_vs_potential_EC_biologic.png")
     
-    
-    
-    
 if True: # plot and fit the HER QC
     her = full_data.cut(tspan=[1500,4000])
     her.tstamp += 1589
     her.plot_measurement(tspan=[0,3000])
-    
-    tm2_her, m2_her = her.grab("M2")
-    i_her = her.grab_for_t("raw current / [mA]", tm2_her)
-    
-    # now select the timespan where we want to fit the decay curve
-    # the way below is probably not the smartest or most pythonic way, but hopefully
-    # it will work for this type of data
-    # select the range where the m2 signal is decreasing drastically (number chosen is a bit arbitrary)
-    mask1 = np.where(np.gradient(m2_her)<-1E-11)
-    # select the range where there is a step in the time because values are removed 
-    # by the previous mask
-    mask2 = np.where(np.gradient(mask1[0])>1)
-    
-    t_list = [tm2_her[mask1][0]] + tm2_her[mask1][mask2].tolist()
-    t_list_clean = t_list[0::2]    
-    t_half_h2_list = []    
     signal = "M2"
-    
+    t_list_clean = find_decay_edge(her, signal, gradient_cutoff=-1E-11)
+    t_half_h2_list = []        
     for time in t_list_clean:
         t_half_h2, fig = exp_fit_signal(her, signal=signal, tspan=[time, time+5])
         fig[0].savefig("./" + exp_name + "_" + signal + f"decay_at_{time:.0f}s.png")
         t_half_h2_list.append(t_half_h2)
-        
     np.savetxt("./" + exp_name + "_" + signal + "_decay_times.csv", t_half_h2_list,
            delimiter=", ", fmt='%s')
 
@@ -152,20 +166,18 @@ if True: # plot and fit the gas exchange QC
     gas_exchange = first_ms.cut(tspan=[5250, 6200])
     gas_exchange.tstamp += 5250
     gas_exchange.plot_measurement()
-    
-    times_ar = [[277,282],[597,602]]
-    times_he = [[123,128],[447,452]]
+    times_ar = find_decay_edge(gas_exchange, "M40", gradient_cutoff=-1E-10)
+    times_he = find_decay_edge(gas_exchange, "M4", gradient_cutoff=-1E-10)
     t_half_list = []
-    
     for time in times_ar:
-        t_half_ar, fig = exp_fit_signal(gas_exchange, signal="M40", tspan=[time[0], time[1]])
-        fig[0].savefig("./" + exp_name + f"_M40_decay_at_{time[0]:.0f}s.png")
+        t_half_ar, fig = exp_fit_signal(gas_exchange, signal="M40", tspan=[time, time+5])
+        fig[0].savefig("./" + exp_name + f"_M40_decay_at_{time:.0f}s.png")
         t_half_list.append(("M40", t_half_ar))
     for time in times_he:
-        t_half_he, fig = exp_fit_signal(gas_exchange, signal="M4", tspan=[time[0], time[1]])
-        fig[0].savefig("./" + exp_name + f"_M4_decay_at_{time[0]:.0f}s.png")
+        t_half_he, fig = exp_fit_signal(gas_exchange, signal="M4", tspan=[time, time+5])
+        fig[0].savefig("./" + exp_name + f"_M4_decay_at_{time:.0f}s.png")
         t_half_list.append(("M4", t_half_he))
-        
     np.savetxt("./" + exp_name + "_gas_exchange_decay_times.csv", t_half_list,
            delimiter =", ", fmt='%s')
+    
     
