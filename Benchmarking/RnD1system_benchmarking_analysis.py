@@ -162,10 +162,9 @@ if True: # plot and fit the HER QC
            delimiter=", ", fmt='%s')
 
 if True: # plot and fit the gas exchange QC
-    first_ms = MSMeasurement.read(data_directory / "2022-01-31 11_11_16 test benchmarking 3/2022-01-31 11_11_16 test benchmarking 3.tsv", reader="zilien")
-    gas_exchange = first_ms.cut(tspan=[5250, 6200])
+    gas_exchange = full_data.cut(tspan=[5250, 6200])
     gas_exchange.tstamp += 5250
-    gas_exchange.plot_measurement()
+    gas_exchange.ms_plotter.plot_measurement()
     times_ar = find_decay_edge(gas_exchange, "M40", gradient_cutoff=-1E-10)
     times_he = find_decay_edge(gas_exchange, "M4", gradient_cutoff=-1E-10)
     t_half_list = []
