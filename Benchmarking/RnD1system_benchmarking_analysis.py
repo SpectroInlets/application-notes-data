@@ -136,7 +136,7 @@ if True: # plot the CV part
     cvs_vs_time = axes_b[0].get_figure()
     cvs_vs_time.savefig("./" + exp_name + "CVs_vs_time.png")
     # plot one of the CVs vs potential. 
-    axes_c = ixdat.plotters.ECPlotter(measurement=cvs[3]).plot_vs_potential()
+    axes_c = cvs[3].ec_plotter.plot_vs_potential()
     cvs_ec_vs_pot = axes_c.get_figure()
     cvs_ec_vs_pot.savefig("./" + exp_name + "CV_vs_potential_EC.png")
     
