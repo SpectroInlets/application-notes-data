@@ -80,7 +80,7 @@ def exp_fit_signal(data, signal, tspan, color=None):
         
         return t_half_sig, (fig, ax1)
     
-def find_decay_edge(data, signal, gradient_cutoff):
+def find_decay_edge(data, signal, gradient_cutoff=None):
         """
         Function to find time where a mass signal starts decaying 
         Parameters
@@ -99,11 +99,15 @@ def find_decay_edge(data, signal, gradient_cutoff):
         t_list: list of times where decay starts
         """
         t, m = data.grab(signal)
-        
         # now select the timespan where we want to fit the decay curve
         # the way below is probably not the smartest or most pythonic way, but
         # it seems to work for this type of data
-        # select the range where the mass signal is decreasing drastically (number chosen is a bit arbitraryly)
+        # define a cutoff for select the range where the mass signal is decreasing drastically 
+        # choice of this number is a bit arbitrary, but it seems to work like this
+        
+        if gradient_cutoff is None:
+            gradient_cutoff = -np.max(m)/25
+                
         mask1 = np.where(np.gradient(m)<gradient_cutoff)
         # select the range where there is a step in the time because values are removed 
         # by the previous mask
@@ -155,7 +159,7 @@ if True: # plot and fit the HER QC
     fig_her.tight_layout()
     fig_her.savefig("./" + exp_name + "_HER_CP.png")
     signal = "M2"
-    t_list_clean = find_decay_edge(her, signal, gradient_cutoff=-1E-11)
+    t_list_clean = find_decay_edge(her, signal)#, gradient_cutoff=-1E-11)
     t_half_h2_list = []        
     for time in t_list_clean:
         t_half_h2, fig = exp_fit_signal(her, signal=signal, tspan=[time, time+5])
@@ -170,8 +174,8 @@ if True: # plot and fit the gas exchange QC
     axes_gas_ex = gas_exchange.ms_plotter.plot_measurement()
     fig_gas_ex = axes_gas_ex.get_figure()
     fig_gas_ex.savefig("./" + exp_name + "_gas_exchange.png")
-    times_ar = find_decay_edge(gas_exchange, "M40", gradient_cutoff=-1E-10)
-    times_he = find_decay_edge(gas_exchange, "M4", gradient_cutoff=-1E-10)
+    times_ar = find_decay_edge(gas_exchange, "M40") #, gradient_cutoff=-1E-10)
+    times_he = find_decay_edge(gas_exchange, "M4") #, gradient_cutoff=-1E-10)
     t_half_list = []
     for time in times_ar:
         t_half_ar, fig = exp_fit_signal(gas_exchange, signal="M40", tspan=[time, time+5])
