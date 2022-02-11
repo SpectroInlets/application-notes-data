@@ -51,7 +51,7 @@ def exp_fit_signal(data, signal, tspan, color=None):
             else: 
                 color = "k"
         if "M" in signal:
-            ylabel = "MS signal / A"
+            ylabel = "MS signal / [A]"
         else:
             ylabel = "signal"
                 
@@ -64,7 +64,7 @@ def exp_fit_signal(data, signal, tspan, color=None):
         ax1.plot(t, sig, linestyle="", marker="o", markersize="3", markerfacecolor="w", markeredgecolor=color ,label=signal+ " signal")
         ax1.plot(t_to_fit, sig_to_fit, label="selected")
         ax1.set_xlim(tspan[0]-10,tspan[1]+20)
-        ax1.set_xlabel("time / s")
+        ax1.set_xlabel("time / [s]")
         ax1.set_ylabel(ylabel)
         
         sig_fit_params = fit_exp_linear(t_to_fit, sig_to_fit, C=0)
@@ -150,7 +150,10 @@ if True: # plot the CV part
 if True: # plot and fit the HER QC
     her = full_data.cut(tspan=[1500,4000])
     her.tstamp += 1589
-    her.plot_measurement(tspan=[0,3000])
+    axes_her = her.plot_measurement(tspan=[0,3000])
+    fig_her = axes_her[0].get_figure()
+    fig_her.tight_layout()
+    fig_her.savefig("./" + exp_name + "_HER_CP.png")
     signal = "M2"
     t_list_clean = find_decay_edge(her, signal, gradient_cutoff=-1E-11)
     t_half_h2_list = []        
@@ -164,7 +167,9 @@ if True: # plot and fit the HER QC
 if True: # plot and fit the gas exchange QC
     gas_exchange = full_data.cut(tspan=[5250, 6200])
     gas_exchange.tstamp += 5250
-    gas_exchange.ms_plotter.plot_measurement()
+    axes_gas_ex = gas_exchange.ms_plotter.plot_measurement()
+    fig_gas_ex = axes_gas_ex.get_figure()
+    fig_gas_ex.savefig("./" + exp_name + "_gas_exchange.png")
     times_ar = find_decay_edge(gas_exchange, "M40", gradient_cutoff=-1E-10)
     times_he = find_decay_edge(gas_exchange, "M4", gradient_cutoff=-1E-10)
     t_half_list = []
