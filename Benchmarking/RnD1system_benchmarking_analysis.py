@@ -104,6 +104,7 @@ def find_decay_edge(data, signal, gradient_cutoff=None):
         # it seems to work for this type of data
         # define a cutoff for select the range where the mass signal is decreasing drastically 
         # choice of this number is a bit arbitrary, but it seems to work like this
+        # needs to be tested with other signal intensities!!
         
         if gradient_cutoff is None:
             gradient_cutoff = -np.max(m)/25
