@@ -67,9 +67,8 @@ def main():
         full_data = zil_data + ec_data
         # save the important colums as ixdat-datafile
         full_data.export(data_directory /"full_data_COstrip_11-11-21.csv")
-        
-    # import from ixdat-datafiles     
-    elif DATA_SOURCE == "ixdat":    
+             
+    elif DATA_SOURCE == "ixdat": # option 3: import from ixdat-datafiles
         part1 = ixdat.Measurement.read(data_directory / "data_part1_COstrip_11-11-21.csv", reader="ixdat")    
         part2 = ixdat.Measurement.read(data_directory / "data_part2_COstrip_11-11-21.csv", reader="ixdat")
         full_data = part1 + part2
@@ -191,8 +190,7 @@ def main():
             cvdiff_fig.savefig("CV_diff_EC_integration" + FIGURE_TYPE)
                 
       
-        # SECOND integrate the MS PART of the CO strip (M44 only)
-        
+        # SECOND integrate the MS PART of the CO strip (M44 only)        
         axes_co2_strip = co_strip_cv.plot_measurement(mass_list=["M44"], tspan=[500, 2000], logplot=False, legend=False)
         #integrate and define a background
         co2_int_strip_c1 = co_strip_cv[1].integrate_signal('M44', tspan=[700, 1050], tspan_bg=[650, 700], ax=axes_co2_strip[0])
@@ -252,6 +250,9 @@ def main():
         if SAVE_FIGURES is True:
             plotname = "CO_strip+2ndcycle_vs_potential_calibrated"
             axes_d[0].get_figure().savefig(plotname + FIGURE_TYPE)
+        
+    else:
+        raise NameError("WHICH_PART not recognized.")
             
 if __name__ == "__main__":
     main()
