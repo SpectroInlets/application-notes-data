@@ -38,7 +38,11 @@ FIGURE_TYPE = ".png"
 
 # choose the directory of the raw data.
 # note that the filenames of the files to be imported need to be edited below
-data_directory = Path.cwd() / r"./data"
+THIS_DIR = Path(__file__).parent.resolve()
+data_directory = THIS_DIR / "data"
+
+#choose the directory where the figures will be saved to
+FIGURES_DIR = THIS_DIR / "figures"
 
 # In addition to the above general settings, when using a diffent dataset, 
 # the time of when the different measurements occur in the dataset needs to be 
@@ -46,7 +50,9 @@ data_directory = Path.cwd() / r"./data"
 # it is recommended to use full_data.plot_measurement(tspan=[t1,t2]) after importing
 # and varying t1 and t2 to find the tspans of interest.
 
-#----------------------------------------------------------------------------
+#---------------------------END OF EDIT SETTINGS--------------------------
+
+
 def main():
     # -----------------------data importing----------------------------------
     # import from the original data files. Note there is no example data included 
@@ -109,7 +115,7 @@ def main():
         coblank_vs_t_fig = axes_a[0].get_figure()
         coblank_vs_t_fig.tight_layout()
         if SAVE_FIGURES is True:
-            coblank_vs_t_fig.savefig("figures\co_blank_vs_time_final" + FIGURE_TYPE)
+            coblank_vs_t_fig.savefig(FIGURES_DIR / ("co_blank_vs_time_final" + FIGURE_TYPE))
     
         # CO strip
         axes_b = co_strip_cv.plot_measurement(mass_lists=[["M4", "M28", "M44"], ["M2", "M32"]], logplot=True, legend=False)
@@ -123,8 +129,7 @@ def main():
         co_strip_vs_t_fig = axes_b[0].get_figure()
         co_strip_vs_t_fig.tight_layout()
         if SAVE_FIGURES is True:
-            co_strip_vs_t_fig.savefig("figures\co_strip_vs_time_final" + FIGURE_TYPE)
-    
+            co_strip_vs_t_fig.savefig(FIGURES_DIR / ("co_strip_vs_time_final" + FIGURE_TYPE))
     
     elif WHICH_PART == "vs_potential":
         # plotting CO strip vs potential with either 2nd_cycle or blank cycle 
@@ -149,7 +154,7 @@ def main():
         costrip_vs_u_fig.tight_layout()
         if SAVE_FIGURES is True:
             plotname = "CO_strip+2ndcycle_vs_potential"
-            costrip_vs_u_fig.savefig("figures\\" + plotname + FIGURE_TYPE)
+            costrip_vs_u_fig.savefig(FIGURES_DIR / (plotname + FIGURE_TYPE))
         
     elif WHICH_PART == "integrate+calibrate":
         # FIRST integrate the ELECTROCHEMICAL CO stripping peak
@@ -189,9 +194,8 @@ def main():
         ax_cvdiff.set_ylabel("J / [$\mu$A cm$^{-2}$]")
         cvdiff_fig = ax_cvdiff.get_figure()
         if SAVE_FIGURES is True:
-            cvdiff_fig.savefig("figures\CV_diff_EC_integration" + FIGURE_TYPE)
+            cvdiff_fig.savefig(FIGURES_DIR / ("CV_diff_EC_integration" + FIGURE_TYPE))
                 
-      
         # SECOND integrate the MS PART of the CO strip (M44 only)        
         axes_co2_strip = co_strip_cv.plot_measurement(mass_list=["M44"], tspan=[500, 2000], logplot=False, legend=False)
         #integrate and define a background
@@ -203,7 +207,7 @@ def main():
             co2_int_blank = co_blank_cv[1].integrate_signal('M44', tspan=[750, 1100], tspan_bg=[700, 750], ax=axes_co2_blank[0])
             # check by plotting
             if SAVE_FIGURES is True:
-                axes_co2_blank[0].get_figure().savefig("figures\CO_blank_CV_integrated_vs_time" + FIGURE_TYPE)
+                axes_co2_blank[0].get_figure().savefig(FIGURES_DIR / ("CO_blank_CV_integrated_vs_time" + FIGURE_TYPE))
             # calculate sensitivity factor F
             f_co2 = (co2_int_strip_c1-co2_int_blank)/n_CO_ox_blank
         elif WHICH_REFERENCE == "2nd_cycle":
@@ -217,7 +221,7 @@ def main():
         axes_co2_strip[2].set_yticklabels([-25, 0, 25])
         axes_co2_strip[2].set_ylabel("J / [$\mu$A cm$^{-2}$]")
         if SAVE_FIGURES is True:
-            axes_co2_strip[0].get_figure().savefig("figures\CO_strip_CV_integrated_vs_time" + FIGURE_TYPE)
+            axes_co2_strip[0].get_figure().savefig(FIGURES_DIR / ("CO_strip_CV_integrated_vs_time" + FIGURE_TYPE))
         
         print(f"Sensitivity factor F = {f_co2} using " + WHICH_REFERENCE + " as baseline.")
         
@@ -251,10 +255,11 @@ def main():
         axes_d[1].set_ylabel("J / [$\mu$A cm$^{-2}$]")
         if SAVE_FIGURES is True:
             plotname = "CO_strip+2ndcycle_vs_potential_calibrated"
-            axes_d[0].get_figure().savefig("figures\\" + plotname + FIGURE_TYPE)
+            axes_d[0].get_figure().savefig(FIGURES_DIR / (plotname + FIGURE_TYPE))
         
     else:
         raise NameError("WHICH_PART not recognized.")
             
+        
 if __name__ == "__main__":
     main()
