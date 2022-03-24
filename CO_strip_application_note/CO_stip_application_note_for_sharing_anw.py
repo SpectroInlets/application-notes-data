@@ -26,7 +26,7 @@ DATA_SOURCE = "ixdat"
 # BioLogic .mpt files), or "ixdat" (for importing ixdat .csv files)
 WHICH_PART = "integrate+calibrate"
 # WHICH_PART can be "vs_time", "vs_potential", "integrate+calibrate"
-WHICH_REFERENCE = "2nd_cycle"
+WHICH_REFERENCE = "reference_cycle"
 # WHICH_REFERENCE determines which cycle is used as a baseline cycle for the 
 # CO strip. Can be "reference_cycle" (separate measurement), or "2nd_cycle"
 # (cycle directly after CO strip) 
@@ -153,8 +153,8 @@ def main():
         costrip_vs_u_fig = axes_c[0].get_figure()
         costrip_vs_u_fig.tight_layout()
         if SAVE_FIGURES is True:
-            plotname = "CO_strip+2ndcycle_vs_potential"
-            costrip_vs_u_fig.savefig(FIGURES_DIR / (plotname + FIGURE_TYPE))
+            plotname = "CO_strip_vs_potential_"
+            costrip_vs_u_fig.savefig(FIGURES_DIR / (plotname + WHICH_REFERENCE + FIGURE_TYPE))
         
     elif WHICH_PART == "integrate+calibrate":
         # FIRST integrate the ELECTROCHEMICAL CO stripping peak
@@ -221,7 +221,7 @@ def main():
         axes_co2_strip[2].set_yticklabels([-25, 0, 25])
         axes_co2_strip[2].set_ylabel("J / [$\mu$A cm$^{-2}$]")
         if SAVE_FIGURES is True:
-            axes_co2_strip[0].get_figure().savefig(FIGURES_DIR / ("CO_strip_CV_integrated_vs_time" + FIGURE_TYPE))
+            axes_co2_strip[0].get_figure().savefig(FIGURES_DIR / ("CO_strip_CV_integrated_vs_time_" + WHICH_REFERENCE + FIGURE_TYPE))
         
         print(f"Sensitivity factor F = {f_co2} using " + WHICH_REFERENCE + " as baseline.")
         
@@ -239,13 +239,15 @@ def main():
         if WHICH_REFERENCE == "reference_cycle":
             co_blank_cv.calibration = ECMSCalibration(ms_cal_results=[cal_co2], RE_vs_RHE=0, A_el=0.196)    
             bas_cycle = co_blank_cv[1]
+            tspan_background = [700,750]
         elif WHICH_REFERENCE == "2nd_cycle":
             bas_cycle = co_strip.cut(tspan=[1290, 1900])
+            tspan_background = [1700, 1800]
         else: #this is technically not required here, but left in anyway
             raise NameError("WHICH_REFERENCE not recognized.")
         
         axes_d = strip_cycle.plot_vs_potential(mol_list=["CO2_M44"], logplot=False, legend=False, tspan_bg=[600, 700])
-        bas_cycle.plot_vs_potential(axes=axes_d, mol_list=["CO2_M44"], logplot=False, linestyle=":", legend=False, tspan_bg=[1700, 1800])
+        bas_cycle.plot_vs_potential(axes=axes_d, mol_list=["CO2_M44"], logplot=False, linestyle=":", legend=False, tspan_bg=tspan_background)
         axes_d[0].set_xlabel("$U_{RHE}$ / [V]")
         axes_d[0].set_yticks([0, 1e-12, 2e-12, 3e-12, 4e-12, 5e-12])
         axes_d[0].set_yticklabels([0, 1, 2, 3, 4, 5])
@@ -254,8 +256,8 @@ def main():
         axes_d[1].set_yticklabels([-25, 0, 25])
         axes_d[1].set_ylabel("J / [$\mu$A cm$^{-2}$]")
         if SAVE_FIGURES is True:
-            plotname = "CO_strip+2ndcycle_vs_potential_calibrated"
-            axes_d[0].get_figure().savefig(FIGURES_DIR / (plotname + FIGURE_TYPE))
+            plotname = "CO_strip+2ndcycle_vs_potential_calibrated_using_"
+            axes_d[0].get_figure().savefig(FIGURES_DIR / (plotname + WHICH_REFERENCE + FIGURE_TYPE))
         
     else:
         raise NameError("WHICH_PART not recognized.")
