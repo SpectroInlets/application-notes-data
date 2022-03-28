@@ -18,8 +18,9 @@ from ixdat.techniques.ec import ECMeasurement
 #Settings for choosing which part of the script is executed:
 DATA_SOURCE = "ixdat"
 # DATA_SOURCE can be "raw" (for importing EC and MS data from Zilien .tsv file),
-# "raw_biologic" (to import MS data from Zilien .tsv files and EC data from 
-# BioLogic .mpt files), or "ixdat" (for importing ixdat .csv files)
+# or "ixdat" (for importing ixdat .csv files)
+# in either case, for plotting the CV only, the biologic CVA file is imported
+# automatically
 WHICH_PART = "plot_CVs"
 # WHICH_PART can be "plot_CVs", "plot+fit_HER", "plot+fit_gas_exchange"
 
@@ -29,13 +30,20 @@ FIGURE_TYPE = ".png"
 # FIGURE_TYPE can be any format matplotlib accepts for saving figures, eg. 
 # ".png", ".svg", ".pdf" etc.
 
-# choose the directory of the raw data.
+# select the directory of the raw data.
 exp_name = "RnD1system_benchmark"
 data_directory = Path.home() / r"C:\Users\AnnaWiniwarter\Dropbox (Spectro Inlets)\Development\Data\New Benchmarking Procedure"
+
+# select the filenames of the raw data.
+ZILIEN_FILENAME = "2022-01-31 11_11_16 test benchmarking 3/2022-01-31 11_11_16 test benchmarking 3.tsv"
+BIOLOGIC_FILENAME = "2022-01-31 11_11_16 test benchmarking 3/2022-01-31 11_11_16 test benchmarking 3_01_01_CVA_DUSB0_C01.mpt"
+
 
 # In addition to the above general settings, when using a diffent dataset, 
 # the time of when the different measurements occur in the dataset needs to be 
 # adjusted in by changing the "tspan" in each section accordingly.  
+# ----------------------- END OF EDIT SETTINGS ------------------------------
+
 
 # ----------- functions for exponential fitting of decay --------------------
 # for now copy paste from here: https://stackoverflow.com/questions/3938042/fitting-exponential-decay-with-no-initial-guessing       
@@ -130,6 +138,10 @@ def find_decay_edge(data, signal, gradient_cutoff=None):
     # choice of this number is a bit arbitrary and doesn't work reliably
     if gradient_cutoff is None:
         gradient_cutoff = -np.max(m)/25
+        
+    #plot the gradient vs time to determine the cutoff value. This figure is not saved.
+    fig, ax = plt.subplots()
+    ax.plot(t, np.gradient(m))
             
     mask1 = np.where(np.gradient(m)<gradient_cutoff)
     # select the range where there is a step in the time because values are removed 
@@ -144,7 +156,7 @@ def find_decay_edge(data, signal, gradient_cutoff=None):
 
 def main():
     if DATA_SOURCE == "raw": # option 1: import both EC and MS data from Zilien data file
-        full_data = ixdat.Measurement.read(data_directory / "2022-01-31 11_11_16 test benchmarking 3/2022-01-31 11_11_16 test benchmarking 3.tsv", reader="zilien")
+        full_data = ixdat.Measurement.read(data_directory / ZILIEN_FILENAME, reader="zilien")
         
         axes_a = full_data.plot_measurement(tspan=[0,10000])
         full_plot= axes_a[0].get_figure()
@@ -172,7 +184,7 @@ def main():
             cvs_ec_vs_pot.savefig("./" + exp_name + "CV_vs_potential_EC" + FIGURE_TYPE)
         
         # To instead plot averaged (less noisy) EC data, import biologic file directly 
-        cvs_ec_only = ECMeasurement.read(data_directory / "2022-01-31 11_11_16 test benchmarking 3/2022-01-31 11_11_16 test benchmarking 3_01_01_CVA_DUSB0_C01.mpt", reader="biologic")
+        cvs_ec_only = ECMeasurement.read(data_directory / BIOLOGIC_FILENAME, reader="biologic")
         cvs_ec_only = cvs_ec_only.as_cv()
         axes_c = cvs_ec_only[3].plot_vs_potential()
         cvs_ec_vs_pot = axes_c.get_figure()
