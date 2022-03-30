@@ -162,10 +162,11 @@ def main():
         full_plot= axes_a[0].get_figure()
         if SAVE_FIGURES is True:
             full_plot.savefig("./" + exp_name + "full_experiment" + FIGURE_TYPE)
-        full_data.export("./" + exp_name + ".csv")
+        full_data.export("./" + exp_name + "_ixdat0.2.0c.csv")
     
     elif DATA_SOURCE == "ixdat":  # option 2: import from ixdat-datafiles
-        full_data = ixdat.Measurement.read("./" + exp_name + ".csv", reader="ixdat")
+        full_data = ixdat.Measurement.read("./" + exp_name + ".csv", reader="ixdat", aliases = {"t": ["time/s"], "raw_potential": ["Ewe/V", "raw potential / [V]"], "raw_current": ["I/mA", "raw current / [mA]"]})
+        # full_data = ixdat.Measurement.read("./" + exp_name + "_ixdat0.2.0c.csv", reader="ixdat")
     else:
         raise NameError("DATA_SOURCE not recognized.")
     
@@ -173,6 +174,7 @@ def main():
         cvs = full_data.cut(tspan=[400,1400])
         cvs.tstamp += 480
         cvs = cvs.as_cv()
+        cvs.redefine_cycle(start_potential=0.9, redox=False)
         axes_b = cvs.plot_measurement()
         cvs_vs_time = axes_b[0].get_figure()
         if SAVE_FIGURES is True:
