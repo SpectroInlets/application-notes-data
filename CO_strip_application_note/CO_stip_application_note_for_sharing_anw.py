@@ -24,7 +24,7 @@ DATA_SOURCE = "ixdat"
 # DATA_SOURCE can be "raw" (for importing EC and MS data from Zilien .tsv file),
 # "raw_biologic" (to import MS data from Zilien .tsv files and EC data from 
 # BioLogic .mpt files), or "ixdat" (for importing ixdat .csv files)
-WHICH_PART = "integrate+calibrate"
+WHICH_PART = "vs_time"
 # WHICH_PART can be "vs_time", "vs_potential", "integrate+calibrate"
 WHICH_REFERENCE = "reference_cycle"
 # WHICH_REFERENCE determines which cycle is used as a baseline cycle for the 
@@ -54,43 +54,90 @@ FIGURES_DIR = THIS_DIR / "figures"
 
 
 def main():
-    # -----------------------data importing----------------------------------
+    # # -----------------------data importing----------------------------------
+    # # import from the original data files. Note there is no example data included 
+    # # for this part of the script
+    # if DATA_SOURCE == "raw": # option 1: import both EC and MS data from Zilien data file
+    #     full_data = ixdat.Measurement.read(data_directory / "myzilienfile.tsv")
+    #     # set RHE potential of reference electrode, electrode SA (geometric), 
+    #     # and ohmic resistance
+    #     full_data.calibrate(RE_vs_RHE=0, A_el=0.196, R_Ohm=0)
+    #     # save the important colums as ixdat-datafile
+    #     full_data.export(data_directory / "full_data_COstrip_11-11-21.csv")
+        
+    # elif DATA_SOURCE == "raw_biologic": # option 2: import MS data from Zilien data file and combine with 
+    #     # EC data from BioLogic file 
+    #     zil_data = MSMeasurement.read(data_directory / "myzilienfile.tsv", reader="zilien")
+    #     ec_data = ixdat.Measurement.read(data_directory / "mybiologicfile.mpt", reader="biologic") #this will require exchanging some of the columns. need to put this in here too 
+    #     # set RHE potential of reference electrode, electrode SA (geometric),
+    #     # and ohmic resistance
+    #     ec_data.calibrate(RE_vs_RHE=0, A_el=0.196, R_Ohm=0)
+    #     full_data = zil_data + ec_data
+    #     # save the important colums as ixdat-datafile
+    #     full_data.export(data_directory /"full_data_COstrip_11-11-21.csv")
+             
+    # elif DATA_SOURCE == "ixdat": # option 3: import from ixdat-datafiles
+    #     part1 = ixdat.Measurement.read(data_directory / "data_part1_COstrip_11-11-21.csv", reader="ixdat", aliases = {"t": ["time/s"], "raw_potential": ["Ewe/V", "raw potential / [V]"], "raw_current": ["I/mA", "raw current / [mA]"]})    
+    #     part2 = ixdat.Measurement.read(data_directory / "data_part2_COstrip_11-11-21.csv", reader="ixdat", aliases = {"t": ["time/s"], "raw_potential": ["Ewe/V", "raw potential / [V]"], "raw_current": ["I/mA", "raw current / [mA]"]})
+    #     full_data = part1 + part2
+        
+    #     # calculating the difference between CVs does not (yet) work for ECMSMeasurement
+    #     # objects, therefore import snippets of the pure EC data as directly imported 
+    #     # from (note this should be fixed in ixdat vs 0.1.7 (?) onwards)
+    #     ec_part1 = ixdat.Measurement.read(data_directory / "ecdata_part1_COstrip_11-11-21.csv", reader="ixdat", aliases = {"t": ["time/s"], "raw_potential": ["Ewe/V", "raw potential / [V]"], "raw_current": ["I/mA", "raw current / [mA]"]})    
+    #     ec_part2 = ixdat.Measurement.read(data_directory / "ecdata_part2_COstrip_11-11-21.csv", reader="ixdat", aliases = {"t": ["time/s"], "raw_potential": ["Ewe/V", "raw potential / [V]"], "raw_current": ["I/mA", "raw current / [mA]"]})
+    #     ec_data = ec_part1 + ec_part2
+        
+    # else:
+    #     raise NameError("DATA_SOURCE not recognized.")
+        
+        
+        # -----------------------data importing-new------------------------------
     # import from the original data files. Note there is no example data included 
     # for this part of the script
+    # csv files provided are as close to original datafiles as possible, chosen
+    # for the script to run faster
     if DATA_SOURCE == "raw": # option 1: import both EC and MS data from Zilien data file
         full_data = ixdat.Measurement.read(data_directory / "myzilienfile.tsv")
-        # set RHE potential of reference electrode, electrode SA (geometric), 
-        # and ohmic resistance
-        full_data.calibrate(RE_vs_RHE=0, A_el=0.196, R_Ohm=0)
         # save the important colums as ixdat-datafile
-        full_data.export(data_directory / "full_data_COstrip_11-11-21.csv")
+        full_data.export(data_directory / "zilien_full_data_COstrip_11-11-21.csv")
         
     elif DATA_SOURCE == "raw_biologic": # option 2: import MS data from Zilien data file and combine with 
-        # EC data from BioLogic file 
+    # EC data from BioLogic file 
         zil_data = MSMeasurement.read(data_directory / "myzilienfile.tsv", reader="zilien")
+        #remove the EC columns from the zilien file:
+        zil_data.replace_series("Ewe/V", None)
+        zil_data.replace_series("I/mA", None)
         ec_data = ixdat.Measurement.read(data_directory / "mybiologicfile.mpt", reader="biologic")
-        # set RHE potential of reference electrode, electrode SA (geometric),
-        # and ohmic resistance
-        ec_data.calibrate(RE_vs_RHE=0, A_el=0.196, R_Ohm=0)
         full_data = zil_data + ec_data
-        # save the important colums as ixdat-datafile
-        full_data.export(data_directory /"full_data_COstrip_11-11-21.csv")
-             
-    elif DATA_SOURCE == "ixdat": # option 3: import from ixdat-datafiles
+
+    elif DATA_SOURCE == "ixdat": # option 3: import from ixdat-datafiles, both for ec and ms
         part1 = ixdat.Measurement.read(data_directory / "data_part1_COstrip_11-11-21.csv", reader="ixdat")    
         part2 = ixdat.Measurement.read(data_directory / "data_part2_COstrip_11-11-21.csv", reader="ixdat")
-        full_data = part1 + part2
-        
-        # calculating the difference between CVs does not (yet) work for ECMSMeasurement
-        # objects, therefore import snippets of the pure EC data as directly imported 
-        # from (note this should be fixed in ixdat vs 0.1.7 (?) onwards)
+        zil_data = part1 + part2
+        #remove the EC columns from the zilien file:
+        zil_data.replace_series("Ewe/V", None)
+        zil_data.replace_series("I/mA", None)
         ec_part1 = ixdat.Measurement.read(data_directory / "ecdata_part1_COstrip_11-11-21.csv", reader="ixdat")    
         ec_part2 = ixdat.Measurement.read(data_directory / "ecdata_part2_COstrip_11-11-21.csv", reader="ixdat")
         ec_data = ec_part1 + ec_part2
+        full_data = zil_data + ec_data
         
     else:
         raise NameError("DATA_SOURCE not recognized.")
-        
+    # add an EC calibration
+    full_data.calibrate(RE_vs_RHE=0, A_el=0.196)
+    # and because we'd like a different unit on the EC data but this is not implemented
+    # in ixdat yet, we use a trick where we define a different surface area and then
+    # manually change the labels in the plots.
+    full_data.calibrate(A_el=0.000196) #this is equal to converting from mA/cm2 to muA/cm2
+    
+    # TODO make sure that everything below can actually run from full_data only.
+    # This means in particular all the data treatment of the EC files has to be 
+    # adjusted for tspans etc. this is a mess to do but will hopefully make the 
+    # code easier to understand. 
+
+    
     # ------------------- data treatment & plotting ---------------------------
     # ------------------- cut dataset -----------------------------------------
     # CO strip blank (reference measurement)
@@ -107,11 +154,12 @@ def main():
     # ------------------- integrate and generate plots --------------------------
     if WHICH_PART == "vs_time":  # plot reference measurement and CO strip vs time
         # CO strip blank (reference measurement)
-        axes_a = co_blank_cv.plot_measurement(mass_lists=[["M2", "M32"],["M4", "M28", "M44"]], logplot=True, legend=False)
-        axes_a[0].set_ylim(1.6e-10, 1e-9)
-        axes_a[3].set_ylim(1e-14, 1e-7)
-        axes_a[0].set_ylabel("M2, M32 signal / [A]")
-        axes_a[3].set_ylabel("M4, M28, M44 signal / [A]")
+        axes_a = co_blank_cv.plot_measurement(mass_lists=[["M4", "M28", "M44"], ["M2", "M32"]], logplot=True, legend=False)
+        axes_a[0].set_ylim(1e-14, 1e-7)
+        axes_a[2].set_ylim(1.6e-10, 1e-9)        
+        axes_a[0].set_ylabel("M4, M28, M44 signal / [A]")
+        axes_a[2].set_ylabel("M2, M32 signal / [A]")
+        axes_a[3].set_ylabel("J / [$\mu$A cm$^{-2}$]") #manually change the label for the right current unit
         coblank_vs_t_fig = axes_a[0].get_figure()
         coblank_vs_t_fig.tight_layout()
         if SAVE_FIGURES is True:
@@ -119,13 +167,12 @@ def main():
     
         # CO strip
         axes_b = co_strip_cv.plot_measurement(mass_lists=[["M4", "M28", "M44"], ["M2", "M32"]], logplot=True, legend=False)
-        axes_b[3].set_ylim(1e-10, 5e-10)
-        axes_b[3].set_ylabel("M2, M32 signal / [A]")
+        axes_b[2].set_ylim(1e-10, 5e-10)
+        axes_b[2].set_ylabel("M2, M32 signal / [A]")
         axes_b[0].set_ylabel("M4, M28, M44 signal / [A]")
         axes_b[1].set_yticks([0,0.5, 1, 1.5])
-        axes_b[2].set_yticks([-0.025, 0, 0.025, 0.05])
-        axes_b[2].set_yticklabels([-25, 0, 25, 50])
-        axes_b[2].set_ylabel("J / [$\mu$A cm$^{-2}$]")
+        axes_b[3].set_yticks([-25, 0, 25, 50])
+        axes_b[3].set_ylabel("J / [$\mu$A cm$^{-2}$]")
         co_strip_vs_t_fig = axes_b[0].get_figure()
         co_strip_vs_t_fig.tight_layout()
         if SAVE_FIGURES is True:
