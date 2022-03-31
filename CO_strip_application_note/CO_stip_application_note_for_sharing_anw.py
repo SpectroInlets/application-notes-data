@@ -24,9 +24,10 @@ DATA_SOURCE = "ixdat"
 # DATA_SOURCE can be "raw" (for importing EC and MS data from Zilien .tsv file),
 # "raw_biologic" (to import MS data from Zilien .tsv files and EC data from 
 # BioLogic .mpt files), or "ixdat" (for importing ixdat .csv files)
-WHICH_PART = "vs_potenial"
-# WHICH_PART can be "vs_time", "vs_potential", "integrate+calibrate"
-WHICH_REFERENCE = "reference_cycle"
+WHICH_PART = "integrate+calibrate"
+# WHICH_PART can be "vs_time", "vs_potential", "integrate+calibrate". Note that 
+# the combination of DATA_SOURCE="raw" and "integrate+calibrate" is not possible.
+WHICH_REFERENCE = "2nd_cycle"
 # WHICH_REFERENCE determines which cycle is used as a baseline cycle for the 
 # CO strip. Can be "reference_cycle" (separate measurement), or "2nd_cycle"
 # (cycle directly after CO strip) 
@@ -94,11 +95,11 @@ def main():
     else:
         raise NameError("DATA_SOURCE not recognized.")
     # add an EC calibration
-    full_data.calibrate(RE_vs_RHE=0, A_el=0.196)
     # and because we'd like a different unit on the EC data but this is not implemented
     # in ixdat yet, we use a trick where we define a different surface area and then
     # manually change the labels in the plots.
-    full_data.calibrate(A_el=0.000196) #this is equal to converting from mA/cm2 to muA/cm2
+    ec_data.calibrate(RE_vs_RHE=0, A_el=0.000196)
+    full_data.calibrate(RE_vs_RHE=0, A_el=0.000196) #this is equal to converting from mA/cm2 to muA/cm2
     
     # TODO make sure that everything below can actually run from full_data only.
     # This means in particular all the data treatment of the EC files has to be 
@@ -174,14 +175,13 @@ def main():
         ec_co_strip = ec_data.cut(tspan=[12250, 14200])  
         ec_co_strip_cv = ec_co_strip.as_cv()
         ec_co_strip_cv.redefine_cycle(start_potential=0.05, redox=False)
-        # ec_co_strip_cv.tstamp +=12250
-        
+               
         if WHICH_REFERENCE == "reference_cycle":
             ec_co_blank = ec_data.cut(tspan=[7150, 9070])  
             ec_co_blank_cv = ec_co_blank.as_cv()
             ec_co_blank_cv.redefine_cycle(start_potential=0.05, redox=False)
-            # ec_co_blank_cv.tstamp +=7150
             cv_diff = ec_co_strip_cv[1].diff_with(ec_co_blank_cv[1])
+            #integrate "raw_current" so that it's not affected by SA normalization
             Q_CO_ox_blank = cv_diff.integrate("raw_current", vspan=[0.4, 0.9]) * 1e-3  # 1e-3 converts mC --> C
             n_CO_ox_blank = Q_CO_ox_blank / (ixdat.constants.FARADAY_CONSTANT * 2)
             SA_blank = Q_CO_ox_blank*1e6/340 #muC/cm2  
@@ -189,6 +189,7 @@ def main():
         
         elif WHICH_REFERENCE == "2nd_cycle":
             cv_diff = ec_co_strip_cv[1].diff_with(ec_co_strip_cv[2])
+            #integrate "raw_current" so that it's not affected by SA normalization
             Q_CO_ox = cv_diff.integrate("raw_current", vspan=[0.4, 0.9]) * 1e-3  # 1e-3 converts mC --> C
             n_CO_ox = Q_CO_ox / (ixdat.constants.FARADAY_CONSTANT * 2)
             SA = Q_CO_ox*1e6/340 #muC/cm2
@@ -202,8 +203,6 @@ def main():
         # that color in your local ixdat ec_plotter.py (and then preferably
         # change it back)        
         ax_cvdiff = cv_diff.plot()
-        ax_cvdiff.set_yticks([-0.04, -0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03, 0.04 ])
-        ax_cvdiff.set_yticklabels([-40, -30, -20, -10, 0, 10, 20, 30, 40])
         ax_cvdiff.set_ylabel("J / [$\mu$A cm$^{-2}$]")
         cvdiff_fig = ax_cvdiff.get_figure()
         if SAVE_FIGURES is True:
@@ -216,9 +215,9 @@ def main():
         
         if WHICH_REFERENCE == "reference_cycle":
             axes_co2_blank = co_blank_cv.plot_measurement(mass_list=["M44"], logplot=False, legend=False)
-            # integrate and define a background
+            axes_co2_blank[3].set_ylabel("J / [$\mu$A cm$^{-2}$]")
+            # integrate and define a background + add to plot
             co2_int_blank = co_blank_cv[1].integrate_signal('M44', tspan=[750, 1100], tspan_bg=[700, 750], ax=axes_co2_blank[0])
-            # check by plotting
             if SAVE_FIGURES is True:
                 axes_co2_blank[0].get_figure().savefig(FIGURES_DIR / ("CO_blank_CV_integrated_vs_time" + FIGURE_TYPE))
             # calculate sensitivity factor F
@@ -230,9 +229,7 @@ def main():
             raise NameError("WHICH_REFERENCE not recognized.")
             
         axes_co2_strip[0].set_ylabel("MS signal / [A]")
-        axes_co2_strip[2].set_yticks([-0.025, 0, 0.025])
-        axes_co2_strip[2].set_yticklabels([-25, 0, 25])
-        axes_co2_strip[2].set_ylabel("J / [$\mu$A cm$^{-2}$]")
+        axes_co2_strip[3].set_ylabel("J / [$\mu$A cm$^{-2}$]")
         if SAVE_FIGURES is True:
             axes_co2_strip[0].get_figure().savefig(FIGURES_DIR / ("CO_strip_CV_integrated_vs_time_" + WHICH_REFERENCE + FIGURE_TYPE))
         
@@ -247,10 +244,10 @@ def main():
                 cal_type="internal",
             )
         # and make a plot with calibrated CO2 signal vs potential
-        co_strip.calibration = ECMSCalibration(ms_cal_results=[cal_co2], RE_vs_RHE=0, A_el=0.196)
+        co_strip.calibrate(ms_cal_results=[cal_co2])
         strip_cycle = co_strip.cut(tspan=[500, 1290])
-        if WHICH_REFERENCE == "reference_cycle":
-            co_blank_cv.calibration = ECMSCalibration(ms_cal_results=[cal_co2], RE_vs_RHE=0, A_el=0.196)    
+        if WHICH_REFERENCE == "reference_cycle": 
+            co_blank_cv.calibrate(ms_cal_results=[cal_co2])
             bas_cycle = co_blank_cv[1]
             tspan_background = [700,750]
         elif WHICH_REFERENCE == "2nd_cycle":
@@ -259,14 +256,10 @@ def main():
         else: #this is technically not required here, but left in anyway
             raise NameError("WHICH_REFERENCE not recognized.")
         
-        axes_d = strip_cycle.plot_vs_potential(mol_list=["CO2_M44"], logplot=False, legend=False, tspan_bg=[600, 700])
-        bas_cycle.plot_vs_potential(axes=axes_d, mol_list=["CO2_M44"], logplot=False, linestyle=":", legend=False, tspan_bg=tspan_background)
+        axes_d = strip_cycle.plot_vs_potential(mol_list=["CO2"], logplot=False, legend=False, tspan_bg=[600, 700], unit="pmol/s")
+        bas_cycle.plot_vs_potential(axes=axes_d, mol_list=["CO2"], logplot=False, linestyle=":", legend=False, tspan_bg=tspan_background, unit="pmol/s")
         axes_d[0].set_xlabel("$U_{RHE}$ / [V]")
-        axes_d[0].set_yticks([0, 1e-12, 2e-12, 3e-12, 4e-12, 5e-12])
-        axes_d[0].set_yticklabels([0, 1, 2, 3, 4, 5])
-        axes_d[0].set_ylabel("cal. signal / [pmol/s]")
-        axes_d[1].set_yticks([-0.025, 0, 0.025])
-        axes_d[1].set_yticklabels([-25, 0, 25])
+        axes_d[0].set_yticks([0, 1, 2, 3, 4, 5])
         axes_d[1].set_ylabel("J / [$\mu$A cm$^{-2}$]")
         if SAVE_FIGURES is True:
             plotname = "CO_strip+2ndcycle_vs_potential_calibrated_using_"
