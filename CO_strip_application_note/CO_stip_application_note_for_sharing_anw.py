@@ -19,8 +19,9 @@ from ixdat.techniques.ec_ms import ECMSCalibration
 
 
 # -----------------------EDIT SETTINGS HERE----------------------------------
-#Settings for choosing which part of the script is executed:
-DATA_SOURCE = "ixdat"
+# Read README.md before working with this script.
+# Settings for choosing which part of the script is executed:
+DATA_SOURCE = "example"
 # DATA_SOURCE can be "example" (for importing the ixdat .csv files 
 # to reproduce the figures from the Spectro Inlets CO-Strip Application Aote), 
 # "raw" (for importing EC and MS data from Zilien .tsv file),
@@ -41,7 +42,6 @@ FIGURE_TYPE = ".png"
 # ".png", ".svg", ".pdf" etc.
 
 # choose the directory of the raw data.
-# note that the filenames of the files to be imported need to be edited below
 THIS_DIR = Path(__file__).parent.resolve()
 DATA_DIRECTORY = THIS_DIR / "data"
 # choose the Zilien file to be imported (example name, data not included)
@@ -56,22 +56,20 @@ FIGURES_DIR = THIS_DIR / "figures"
 # the time of when the different measurements occur in the dataset needs to be 
 # adjusted in by changing the "tspan" in each section accordingly. To this end
 # it is recommended to use full_data.plot_measurement(tspan=[t1,t2]) after importing
-# and varying t1 and t2 to find the tspans of interest.
+# and varying t1 and t2 to find the tspans of interest. (see README.md)
 
 #---------------------------END OF EDIT SETTINGS--------------------------
 
 
 def main():
-    # # -----------------------data importing----------------------------------
-    # import from the original data files. Note there is no example data included 
-    # for this part of the script
-    # csv files provided are as close to original datafiles as possible, chosen
-    # for the script to run faster
-    if DATA_SOURCE == "example": #        
+    #  -----------------------data importing----------------------------------
+    if DATA_SOURCE == "example": # import example data. csv files provided are 
+        # as close to original datafiles as possible, chosen for the script to 
+        # run faster
         part1 = ixdat.Measurement.read(DATA_DIRECTORY / "data_part1_COstrip_11-11-21.csv", reader="ixdat")    
         part2 = ixdat.Measurement.read(DATA_DIRECTORY / "data_part2_COstrip_11-11-21.csv", reader="ixdat")
         zil_data = part1 + part2
-        # remove the EC columns from the zilien file:
+        # remove the EC columns imported from the Zilien file:
         zil_data.replace_series("Ewe/V", None)
         zil_data.replace_series("I/mA", None)
         # import EC data from csv files of the ECLab data
@@ -80,7 +78,9 @@ def main():
         # combine MS and EC data
         ec_data = ec_part1 + ec_part2
         full_data = zil_data + ec_data
-    
+        
+    # import from the original data files. Note there is no example data included 
+    # for this part of the script
     elif DATA_SOURCE == "raw": # option 1: import both EC and MS data from Zilien data file
         full_data = ixdat.Measurement.read(DATA_DIRECTORY / ZILIEN_FILENAME, reader="zilien")
         # Integrating the EC data of this file will prompt an error!
@@ -120,11 +120,6 @@ def main():
     # manually change the labels in the plots.
     ec_data.calibrate(RE_vs_RHE=0, A_el=0.000196)
     full_data.calibrate(RE_vs_RHE=0, A_el=0.000196) #this is equal to converting from mA/cm2 to muA/cm2
-    
-    # TODO make sure that everything below can actually run from full_data only.
-    # This means in particular all the data treatment of the EC files has to be 
-    # adjusted for tspans etc. this is a mess to do but will hopefully make the 
-    # code easier to understand. 
     
     # ------------------- data treatment & plotting ---------------------------
     # ------------------- cut dataset -----------------------------------------
