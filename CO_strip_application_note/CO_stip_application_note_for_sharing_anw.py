@@ -21,10 +21,13 @@ from ixdat.techniques.ec_ms import ECMSCalibration
 # -----------------------EDIT SETTINGS HERE----------------------------------
 #Settings for choosing which part of the script is executed:
 DATA_SOURCE = "ixdat"
-# DATA_SOURCE can be "raw" (for importing EC and MS data from Zilien .tsv file),
+# DATA_SOURCE can be "example" (for importing the ixdat .csv files 
+# to reproduce the figures from the Spectro Inlets CO-Strip Application Aote), 
+# "raw" (for importing EC and MS data from Zilien .tsv file),
 # "raw_biologic" (to import MS data from Zilien .tsv files and EC data from 
-# BioLogic .mpt files), or "ixdat" (for importing ixdat .csv files)
-WHICH_PART = "integrate+calibrate"
+# BioLogic .mpt files), or "ixdat" (for importing ixdat .csv files exported 
+# with the settings "raw" or "raw_biologic")
+WHICH_PART = "vs_time"
 # WHICH_PART can be "vs_time", "vs_potential", "integrate+calibrate". Note that 
 # the combination of DATA_SOURCE="raw" and "integrate+calibrate" is not possible.
 WHICH_REFERENCE = "2nd_cycle"
@@ -40,7 +43,11 @@ FIGURE_TYPE = ".png"
 # choose the directory of the raw data.
 # note that the filenames of the files to be imported need to be edited below
 THIS_DIR = Path(__file__).parent.resolve()
-data_directory = THIS_DIR / "data"
+DATA_DIRECTORY = THIS_DIR / "data"
+# choose the Zilien file to be imported (example name, data not included)
+ZILIEN_FILENAME = "myzilienfile.tsv"
+# choose the EC-lab file to be imported (example name, data not included)
+ECLAB_FILENAME = "mybiologicfile.mpt"
 
 #choose the directory where the figures will be saved to
 FIGURES_DIR = THIS_DIR / "figures"
@@ -60,38 +67,51 @@ def main():
     # for this part of the script
     # csv files provided are as close to original datafiles as possible, chosen
     # for the script to run faster
-    if DATA_SOURCE == "raw": # option 1: import both EC and MS data from Zilien data file
-        full_data = ixdat.Measurement.read(data_directory / "myzilienfile.tsv")
-        # save the important colums as ixdat-datafile
-        full_data.export(data_directory / "full_data_COstrip_11-11-21.csv")
-        
-    elif DATA_SOURCE == "raw_biologic": # option 2: import MS data from Zilien data file and combine with 
-    # EC data from BioLogic file 
-        zil_data = MSMeasurement.read(data_directory / "myzilienfile.tsv", reader="zilien")
-        # remove the EC columns from the zilien file:
-        zil_data.replace_series("Ewe/V", None)
-        zil_data.replace_series("I/mA", None)
-        ec_data = ixdat.Measurement.read(data_directory / "mybiologicfile.mpt", reader="biologic")
-        full_data = zil_data + ec_data
-        full_data.export(data_directory / "full_data_COstrip_11-11-21.csv")
-
-    elif DATA_SOURCE == "ixdat": # option 3: import from ixdat-datafiles, both for ec and ms
-        # if full data saved as csv using one of the above options, uncomment the following line
-        # and outcomment all the lines below until the end of this elif clause
-        # full_data = ixdat.Measurement.read(data_directory / "full_data_COstrip_11-11-21.csv", reader=ixdat)
-        part1 = ixdat.Measurement.read(data_directory / "data_part1_COstrip_11-11-21.csv", reader="ixdat")    
-        part2 = ixdat.Measurement.read(data_directory / "data_part2_COstrip_11-11-21.csv", reader="ixdat")
+    if DATA_SOURCE == "example": #        
+        part1 = ixdat.Measurement.read(DATA_DIRECTORY / "data_part1_COstrip_11-11-21.csv", reader="ixdat")    
+        part2 = ixdat.Measurement.read(DATA_DIRECTORY / "data_part2_COstrip_11-11-21.csv", reader="ixdat")
         zil_data = part1 + part2
         # remove the EC columns from the zilien file:
         zil_data.replace_series("Ewe/V", None)
         zil_data.replace_series("I/mA", None)
         # import EC data from csv files of the ECLab data
-        ec_part1 = ixdat.Measurement.read(data_directory / "ecdata_part1_COstrip_11-11-21.csv", reader="ixdat")    
-        ec_part2 = ixdat.Measurement.read(data_directory / "ecdata_part2_COstrip_11-11-21.csv", reader="ixdat")
+        ec_part1 = ixdat.Measurement.read(DATA_DIRECTORY / "ecdata_part1_COstrip_11-11-21.csv", reader="ixdat")    
+        ec_part2 = ixdat.Measurement.read(DATA_DIRECTORY / "ecdata_part2_COstrip_11-11-21.csv", reader="ixdat")
         # combine MS and EC data
         ec_data = ec_part1 + ec_part2
         full_data = zil_data + ec_data
+    
+    elif DATA_SOURCE == "raw": # option 1: import both EC and MS data from Zilien data file
+        full_data = ixdat.Measurement.read(DATA_DIRECTORY / ZILIEN_FILENAME, reader="zilien")
+        # Integrating the EC data of this file will prompt an error!
+        print("""WARNING: Data imported from Zilien file only. This will lead 
+              to an error when trying to integrate the EC data using 
+              cv.diff_with() use DATA_SOURCE=\"raw_biologic\" instead 
+              and co-import the EC data directly from the EC-lab file.""")
+        # save the important colums as ixdat-datafile
+        full_data.export(DATA_DIRECTORY / "full_data_zilien_COstrip_11-11-21.csv")
         
+    elif DATA_SOURCE == "raw_biologic": # option 2: import MS data from Zilien data file and combine with 
+    # EC data from BioLogic file 
+        zil_data = MSMeasurement.read(DATA_DIRECTORY / ZILIEN_FILENAME, reader="zilien")
+        # remove the EC columns from the zilien file:
+        zil_data.replace_series("Ewe/V", None)
+        zil_data.replace_series("I/mA", None)
+        ec_data = ixdat.Measurement.read(DATA_DIRECTORY / ECLAB_FILENAME, reader="biologic")
+        full_data = zil_data + ec_data
+        full_data.export(DATA_DIRECTORY / "full_data_COstrip_11-11-21.csv")
+        
+    elif DATA_SOURCE == "ixdat": # option 3: import from ixdat-datafiles, both for ec and ms
+        # if full data saved as csv using one of the above options
+        try:
+            full_data = ixdat.Measurement.read(DATA_DIRECTORY / "full_data_COstrip_11-11-21.csv", reader="ixdat")
+        except FileNotFoundError:
+            full_data = ixdat.Measurement.read(DATA_DIRECTORY / "full_data_zilien_COstrip_11-11-21.csv", reader="ixdat")
+            # Integrating the EC data of this file will prompt an error!
+            print("""WARNING: Data imported from Zilien file only. This will lead 
+                  to an error when trying to integrate the EC data using 
+                  cv.diff_with() use DATA_SOURCE=\"raw_biologic\" instead 
+                  and co-import the EC data directly from the EC-lab file.""")
     else:
         raise NameError("DATA_SOURCE not recognized.")
     # add an EC calibration
@@ -267,6 +287,7 @@ def main():
         
     else:
         raise NameError("WHICH_PART not recognized.")
+    return full_data
             
         
 if __name__ == "__main__":
