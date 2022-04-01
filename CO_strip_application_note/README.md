@@ -1,4 +1,4 @@
-##This script enables reproducing the figures from the Spectro Inlets CO-strip Application Note.
+## This script enables reproducing the figures from the Spectro Inlets CO-strip Application Note.
 
 
 ### How to work with this script?
@@ -14,9 +14,10 @@ Select the other settings according to how to plot the data.
 ### Plot your own data
 If you want to plot your own CO strip, first the data needs to be imported using `DATA_SOURCE="raw" or "raw_biologic"`.
 Note that when using "raw", integration and calibrating does not work. 
-Select the data_directory where your data is saved. If you provide the full path using Windows it can be necessary to give the path as a raw string, i.e. use following syntax: `r"C:\Users\MyUser\MyFolder"`
+Select the `data_directory` where your data is saved. If you provide the full path using Windows it can be necessary to give the path as a raw string, i.e. use following syntax: `r"C:\Users\MyUser\MyFolder"`
 
-The first time you run the analysis, you will need to find the time spans for the relevant parts of the data (i.e. the reference cycle, CO-stripping cycle, baselines for the integration etc.). This can for example be done by running the script (which might result in error messages that can be ignored for now), and then calling `full_data = main()` in the Python console. This will save the imported dataset in a variable that can then be called directly from the console. Now, use `full_data.plot_measurement(tspan=[t1, t2])` to plot the experiment over different time spans. If you use an interactive Python plot, you can leftclick on the plot to get the time printed to the console. Once you have found the relevant time spans, go through the script and replace the time span whereever `tspan` is given accordingly. 
+The first time you run the analysis, you will need to find the time spans for the relevant parts of the data (i.e. the reference cycle, CO-stripping cycle, baselines for the integration etc.). This 
+can for example be done by running the script (which might result in error messages that can be ignored for now), and then calling `full_data = main()` in the Python console. This will save the imported dataset in a variable that can then be called directly from the console. Now, use `full_data.plot_measurement(tspan=[t1, t2])` to plot the experiment over different time spans. If you use an interactive Python plot, you can leftclick on the plot to get the time printed to the console. Once you have found the relevant time spans, go through the script and replace the time span whereever `tspan` is given accordingly. 
 
 Happy analysing!
 
