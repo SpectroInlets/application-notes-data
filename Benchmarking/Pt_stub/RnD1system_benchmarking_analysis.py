@@ -31,12 +31,13 @@ FIGURE_TYPE = ".png"
 # ".png", ".svg", ".pdf" etc.
 
 # select the directory of the raw data.
-exp_name = "RnD1system_benchmark"
-data_directory = Path.home() / r"C:\Users\AnnaWiniwarter\Dropbox (Spectro Inlets)\Development\Data\New Benchmarking Procedure"
+EXP_NAME = "RnD1system_benchmark"
+THIS_DIR = Path(__file__).parents[1].resolve()
+DATA_DIRECTORY = THIS_DIR / "data"
 
 # select the filenames of the raw data.
-ZILIEN_FILENAME = "2022-01-31 11_11_16 test benchmarking 3/2022-01-31 11_11_16 test benchmarking 3.tsv"
-BIOLOGIC_FILENAME = "2022-01-31 11_11_16 test benchmarking 3/2022-01-31 11_11_16 test benchmarking 3_01_01_CVA_DUSB0_C01.mpt"
+ZILIEN_FILENAME = "2022-01-31 11_11_16 test benchmarking 3.tsv"
+BIOLOGIC_FILENAME = "2022-01-31 11_11_16 test benchmarking 3_01_01_CVA_DUSB0_C01.mpt"
 
 
 # In addition to the above general settings, when using a diffent dataset, 
@@ -156,17 +157,18 @@ def find_decay_edge(data, signal, gradient_cutoff=None):
 
 def main():
     if DATA_SOURCE == "raw": # option 1: import both EC and MS data from Zilien data file
-        full_data = ixdat.Measurement.read(data_directory / ZILIEN_FILENAME, reader="zilien")
+        print(DATA_DIRECTORY / ZILIEN_FILENAME)
+        full_data = ixdat.Measurement.read(DATA_DIRECTORY / ZILIEN_FILENAME, reader="zilien")
+        
         
         axes_a = full_data.plot_measurement(tspan=[0,10000])
         full_plot= axes_a[0].get_figure()
         if SAVE_FIGURES is True:
-            full_plot.savefig("./" + exp_name + "full_experiment" + FIGURE_TYPE)
-        full_data.export("./" + exp_name + "_ixdat0.2.0c.csv")
+            full_plot.savefig("./" + EXP_NAME + "full_experiment" + FIGURE_TYPE)
+        full_data.export("./" + EXP_NAME + ".csv")
     
     elif DATA_SOURCE == "ixdat":  # option 2: import from ixdat-datafiles
-        full_data = ixdat.Measurement.read("./" + exp_name + ".csv", reader="ixdat", aliases = {"t": ["time/s"], "raw_potential": ["Ewe/V", "raw potential / [V]"], "raw_current": ["I/mA", "raw current / [mA]"]})
-        # full_data = ixdat.Measurement.read("./" + exp_name + "_ixdat0.2.0c.csv", reader="ixdat")
+        full_data = ixdat.Measurement.read("./" + EXP_NAME + ".csv", reader="ixdat")
     else:
         raise NameError("DATA_SOURCE not recognized.")
     
@@ -178,20 +180,20 @@ def main():
         axes_b = cvs.plot_measurement()
         cvs_vs_time = axes_b[0].get_figure()
         if SAVE_FIGURES is True:
-            cvs_vs_time.savefig("./" + exp_name + "CVs_vs_time" + FIGURE_TYPE)
+            cvs_vs_time.savefig("./" + EXP_NAME + "CVs_vs_time" + FIGURE_TYPE)
         # plot one of the CVs (the 4th out of 5) vs potential. 
         axes_c = cvs[3].ec_plotter.plot_vs_potential()
         cvs_ec_vs_pot = axes_c.get_figure()
         if SAVE_FIGURES is True:
-            cvs_ec_vs_pot.savefig("./" + exp_name + "CV_vs_potential_EC" + FIGURE_TYPE)
+            cvs_ec_vs_pot.savefig("./" + EXP_NAME + "CV_vs_potential_EC" + FIGURE_TYPE)
         
         # To instead plot averaged (less noisy) EC data, import biologic file directly 
-        cvs_ec_only = ECMeasurement.read(data_directory / BIOLOGIC_FILENAME, reader="biologic")
+        cvs_ec_only = ECMeasurement.read(DATA_DIRECTORY / BIOLOGIC_FILENAME, reader="biologic")
         cvs_ec_only = cvs_ec_only.as_cv()
         axes_c = cvs_ec_only[3].plot_vs_potential()
         cvs_ec_vs_pot = axes_c.get_figure()
         if SAVE_FIGURES is True:
-            cvs_ec_vs_pot.savefig("./" + exp_name + "CV_vs_potential_EC_biologic" + FIGURE_TYPE)
+            cvs_ec_vs_pot.savefig("./" + EXP_NAME + "CV_vs_potential_EC_biologic" + FIGURE_TYPE)
         
     elif WHICH_PART == "plot+fit_HER": # plot and fit the HER QC
         her = full_data.cut(tspan=[1500,4000])
@@ -200,7 +202,7 @@ def main():
         fig_her = axes_her[0].get_figure()
         fig_her.tight_layout()
         if SAVE_FIGURES is True:
-            fig_her.savefig("./" + exp_name + "_HER_CP.png")
+            fig_her.savefig("./" + EXP_NAME + "_HER_CP.png")
         signal = "M2"
         t_list_clean = find_decay_edge(her, signal) # if automatically generated
         # list doesn't catch the right times, cutoff value can be selected manually: 
@@ -210,9 +212,9 @@ def main():
         for time in t_list_clean:
             t_half_h2, fig = exp_fit_signal(her, signal=signal, tspan=[time, time+5])
             if SAVE_FIGURES is True:
-                fig[0].savefig("./" + exp_name + "_" + signal + f"decay_at_{time:.0f}s." + FIGURE_TYPE)
+                fig[0].savefig("./" + EXP_NAME + "_" + signal + f"decay_at_{time:.0f}s." + FIGURE_TYPE)
             t_half_h2_list.append(t_half_h2)
-        np.savetxt("./" + exp_name + "_" + signal + "_decay_times.csv", t_half_h2_list,
+        np.savetxt("./" + EXP_NAME + "_" + signal + "_decay_times.csv", t_half_h2_list,
                delimiter=", ", fmt='%s')
     
     elif WHICH_PART == "plot+fit_gas_exchange": # plot and fit the gas exchange QC
@@ -221,25 +223,27 @@ def main():
         axes_gas_ex = gas_exchange.ms_plotter.plot_measurement()
         fig_gas_ex = axes_gas_ex.get_figure()
         if SAVE_FIGURES is True:
-            fig_gas_ex.savefig("./" + exp_name + "_gas_exchange" + FIGURE_TYPE)
+            fig_gas_ex.savefig("./" + EXP_NAME + "_gas_exchange" + FIGURE_TYPE)
         times_ar = find_decay_edge(gas_exchange, "M40") #, gradient_cutoff=-1E-10)
         times_he = find_decay_edge(gas_exchange, "M4") #, gradient_cutoff=-1E-10)
         t_half_list = []
         for time in times_ar:
             t_half_ar, fig = exp_fit_signal(gas_exchange, signal="M40", tspan=[time, time+5])
             if SAVE_FIGURES is True:
-                fig[0].savefig("./" + exp_name + f"_M40_decay_at_{time:.0f}s" + FIGURE_TYPE)
+                fig[0].savefig("./" + EXP_NAME + f"_M40_decay_at_{time:.0f}s" + FIGURE_TYPE)
             t_half_list.append(("M40", t_half_ar))
         for time in times_he:
             t_half_he, fig = exp_fit_signal(gas_exchange, signal="M4", tspan=[time, time+5])
             if SAVE_FIGURES is True:
-                fig[0].savefig("./" + exp_name + f"_M4_decay_at_{time:.0f}s" + FIGURE_TYPE)
+                fig[0].savefig("./" + EXP_NAME + f"_M4_decay_at_{time:.0f}s" + FIGURE_TYPE)
             t_half_list.append(("M4", t_half_he))
-        np.savetxt("./" + exp_name + "_gas_exchange_decay_times.csv", t_half_list,
+        np.savetxt("./" + EXP_NAME + "_gas_exchange_decay_times.csv", t_half_list,
                delimiter =", ", fmt='%s')
         
     else:
         raise NameError("WHICH_PART not recognized.")
+        
+    return full_data
         
 if __name__ == "__main__":
     main()    
