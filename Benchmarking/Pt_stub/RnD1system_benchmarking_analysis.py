@@ -145,6 +145,8 @@ def find_decay_edge(data, signal, gradient_cutoff=None):
     #plot the gradient vs time to determine the cutoff value. This figure is not saved.
     fig, ax = plt.subplots()
     ax.plot(t, np.gradient(m))
+    ax.set_ylabel("Gradient in signal " + signal)
+    ax.set_xlabel("time / [s]")
             
     mask1 = np.where(np.gradient(m)<gradient_cutoff)
     # select the range where there is a step in the time because values are removed 

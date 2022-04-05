@@ -21,7 +21,7 @@ DATA_SOURCE = "ixdat"
 # or "ixdat" (for importing ixdat .csv files as generated when using setting "raw")
 # in either case, for plotting the CV only, the biologic CVA file is imported
 # automatically
-WHICH_PART = "plot_CVs"
+WHICH_PART = "plot+fit_HER"
 # WHICH_PART can be "plot_CVs", "plot+fit_HER", "plot+fit_gas_exchange"
 
 SAVE_FIGURES = True
@@ -145,6 +145,8 @@ def find_decay_edge(data, signal, gradient_cutoff=None):
     #plot the gradient vs time to determine the cutoff value. This figure is not saved.
     fig, ax = plt.subplots()
     ax.plot(t, np.gradient(m))
+    ax.set_ylabel("Gradient in signal " + signal)
+    ax.set_xlabel("time / [s]")
             
     mask1 = np.where(np.gradient(m)<gradient_cutoff)
     # select the range where there is a step in the time because values are removed 
