@@ -42,7 +42,9 @@ BIOLOGIC_FILENAME = "2022-01-31 11_11_16 test benchmarking 3_01_01_CVA_DUSB0_C01
 
 # In addition to the above general settings, when using a diffent dataset, 
 # the time of when the different measurements occur in the dataset needs to be 
-# adjusted in by changing the "tspan" in each section accordingly.  
+# adjusted in by changing the "tspan" in each section accordingly. To this end
+# it is recommended to use full_data.plot_measurement(tspan=[t1,t2]) after importing
+# and varying t1 and t2 to find the tspans of interest. (see README.md)
 # ----------------------- END OF EDIT SETTINGS ------------------------------
 
 
@@ -154,7 +156,6 @@ def find_decay_edge(data, signal, gradient_cutoff=None):
     return t_list_clean
 
 
-
 def main():
     if DATA_SOURCE == "raw": # option 1: import both EC and MS data from Zilien data file
         print(DATA_DIRECTORY / ZILIEN_FILENAME)
@@ -244,6 +245,7 @@ def main():
         raise NameError("WHICH_PART not recognized.")
         
     return full_data
+
         
 if __name__ == "__main__":
     main()    
