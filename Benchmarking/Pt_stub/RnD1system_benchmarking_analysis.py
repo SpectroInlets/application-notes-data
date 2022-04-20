@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Feb  2 09:30:01 2022
+Created on Wed Feb  2 09:30:01 2022.
 
 @author: AnnaWiniwarter
 """
@@ -10,7 +10,6 @@ import ixdat
 
 from pathlib import Path
 from matplotlib import pyplot as plt
-from ixdat.techniques.ms import MSMeasurement
 from ixdat.techniques.ec import ECMeasurement
 
 
@@ -64,23 +63,23 @@ def fit_exp_linear(t, y, C=0):
 
 def exp_fit_signal(data, signal, tspan, color=None):
     """
-    Function to do an exponential fit on selection of data
+    Do an exponential fit on selection of data.
+
     Parameters
     ----------
-    data : ECMSMeasurement object (probably ECMeasurement or MSMeasurement 
+    data : ECMSMeasurement object (probably ECMeasurement or MSMeasurement
                                    will also work)
-    signal : which part of the ECMSMeasurement object to fit, i.e. column 
+    signal : which part of the ECMSMeasurement object to fit, i.e. column
     that will then be selected using ECMSMeasurement.grab(signal)
     tspan : ixdat syntax for providing a time span [tstart,tend], time span
     over which the fit will be done
-    color : color to use for plotting "signal", for MS signals, standard 
+    color : color to use for plotting "signal", for MS signals, standard
     is selected automatically
 
     Returns
     -------
     t_half, (fig, ax1)
     """
-
     if color is None:
         if "M" in signal:
             color = ixdat.plotters.ms_plotter.STANDARD_COLORS[signal]
@@ -120,16 +119,17 @@ def exp_fit_signal(data, signal, tspan, color=None):
 
 def find_decay_edge(data, signal, gradient_cutoff=None):
     """
-    Function to find time where a mass signal starts decaying 
+    Find time where a mass signal starts decaying.
+
     Parameters
     ----------
-    data : ECMSMeasurement object (probably ECMeasurement or MSMeasurement 
+    data : ECMSMeasurement object (probably ECMeasurement or MSMeasurement
                                    will also work)
-    signal : which part of the ECMSMeasurement object to fit, i.e. column 
+    signal : which part of the ECMSMeasurement object to fit, i.e. column
     that will then be selected using ECMSMeasurement.grab(signal)
 
-    gradient_cutoff: defines gradient under which mass signal is "decreasing drastically", 
-    depends on the absolute value of the signal -> needs to be chosen individually (a 
+    gradient_cutoff: defines gradient under which mass signal is "decreasing drastically",
+    depends on the absolute value of the signal -> needs to be chosen individually (a
     good first guess is -1*((order of magnitude of signal)-1))
 
     Returns
@@ -162,6 +162,7 @@ def find_decay_edge(data, signal, gradient_cutoff=None):
 
 
 def main():
+    """Run benchmarking analysis."""
     if DATA_SOURCE == "raw":  # option 1: import both EC and MS data from Zilien data file
         print(DATA_DIRECTORY / ZILIEN_FILENAME)
         full_data = ixdat.Measurement.read(DATA_DIRECTORY / ZILIEN_FILENAME, reader="zilien")
