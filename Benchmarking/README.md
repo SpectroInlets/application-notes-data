@@ -14,7 +14,7 @@ data_directory = THIS_DIR / "data"
 Select the other settings according to how to plot the data.
 
 ### Plot your own data
-If you want to plot your benchmarking data, first the data needs to be imported using `DATA_SOURCE="raw". 
+If you want to plot your benchmarking data, first the data needs to be imported using `DATA_SOURCE="raw"`. 
 Select the `DATA_DIRECTORY` where your data is saved. If you provide the full path using Windows it can be necessary to give the path as a raw string, i.e. use following syntax: `r"C:\Users\MyUser\MyFolder"`
 
 The first time you run the analysis, you will need to find the time spans for the relevant parts of the data (i.e. CVs, the HER sequence, the gas exchange sequence). This can for example be done by running the script (which might result in error messages that can be ignored for now), and then calling `full_data = main()` in the Python console. This will save the imported dataset in a variable that can then be called directly from the console. 
