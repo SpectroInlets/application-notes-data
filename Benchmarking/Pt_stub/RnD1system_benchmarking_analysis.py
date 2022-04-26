@@ -29,7 +29,8 @@ WHICH_PART = "plot_CVs"
 # WHICH_PART can be "plot_CVs", "plot+fit_HER", "plot+fit_gas_exchange"
 
 SAVE_FIGURES = True
-# SAVE_FIGURES set to True: figures will be saved automatically.
+# SAVE_FIGURES set to True: figures will be saved automatically. If set to False
+# figures will show instead
 FIGURE_TYPE = ".png"
 # FIGURE_TYPE can be any format matplotlib accepts for saving figures, eg.
 # ".png", ".svg", ".pdf" etc.
